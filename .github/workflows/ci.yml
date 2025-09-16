@@ -1,50 +1,50 @@
-name: CI & Pages
+name: CI Pipeline
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
     steps:
-      # Optional: only needed if you want repo files
-      # - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Create static deployment file
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: set version
+        id: set_version
         run: |
-          mkdir -p dist
-          cat > dist/index.html <<'EOF'
-          <!doctype html>
-          <meta charset="utf-8">
-          <title>Hello GitHub Pages</title>
-          <h1>Hello GitHub Pages 👋</h1>
-          <p>If you see this, your Pages deploy works.</p>
-          EOF
+          version=$(date +'%Y%m%d.%H%M%S')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          printf '{"version": "%s" }' "$version" > public/version.json
 
-      - name: Upload Pages artifact
+      - name: Build
+        run: |
+          npm ci && npm run build
+          cp dist/index.html dist/404.html
+
+      - name: Update pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
-
   deploy:
-    name: Deploy
     needs: build
-    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
