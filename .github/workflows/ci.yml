@@ -1,33 +1,50 @@
-name: CI Pipeline
+name: CI & Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: create static deployment file
-        run: |
-          mkdir dist
-          echo "<h1>Hello GitHub Pages</h1>" >> dist/index.html
+      # Optional: only needed if you want repo files
+      # - uses: actions/checkout@v4
 
-      - name: Update pages artifact
+      - name: Create static deployment file
+        run: |
+          mkdir -p dist
+          cat > dist/index.html <<'EOF'
+          <!doctype html>
+          <meta charset="utf-8">
+          <title>Hello GitHub Pages</title>
+          <h1>Hello GitHub Pages 👋</h1>
+          <p>If you see this, your Pages deploy works.</p>
+          EOF
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
+
   deploy:
+    name: Deploy
     needs: build
-    permissions:
-      pages: write
-      id-token: write
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
