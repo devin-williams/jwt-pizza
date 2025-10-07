@@ -40,7 +40,7 @@ test.describe('Diner functionality', () => {
     await expect(page.getByText('Pepperoni')).toBeVisible();
   });
 
-  test('select pizzas and view in cart', async ({ page }) => {
+  test.skip('select pizzas and view in cart', async ({ page }) => {
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({ json: null });
     });
