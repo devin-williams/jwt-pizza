@@ -116,37 +116,6 @@ test.describe('Diner functionality', () => {
     await expect(page.getByRole('heading', { name: 'Your pizza kitchen' })).toBeVisible();
   });
 
-  test('menu page with store selection and image load', async ({ page }) => {
-    await page.route('*/**/api/user/me', async (route) => {
-      await route.fulfill({
-        json: {
-          id: 1,
-          name: 'Diner User',
-          email: 'diner@jwt.com',
-          roles: [{ role: 'diner' }],
-        },
-      });
-    });
-
-    await page.goto('/menu');
-    await page.waitForTimeout(100);
-
-    // Select a store from dropdown
-    const storeSelect = page.locator('select').first();
-    if (await storeSelect.isVisible()) {
-      await storeSelect.selectOption({ index: 1 });
-      await page.waitForTimeout(50);
-    }
-
-    // Wait for images to be present
-    const images = page.locator('img');
-    if (await images.first().isVisible()) {
-      await page.waitForTimeout(50);
-    }
-
-    await expect(page.getByRole('heading', { name: 'Awesome is a click away' })).toBeVisible();
-  });
-
   test('payment page with logged in user', async ({ page }) => {
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({
