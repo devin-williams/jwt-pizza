@@ -4,7 +4,7 @@ import istanbul from "vite-plugin-istanbul";
 export default defineConfig(() => ({
   plugins: [
     istanbul({
-      include: "src/*",
+      include: "src/**/*",
       exclude: ["node_modules", "tests/"],
       extension: [".js", ".jsx", ".ts", ".tsx"],
       requireEnv: false,
