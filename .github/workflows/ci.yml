@@ -27,10 +27,14 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           printf '{"version": "%s" }' "$version" > public/version.json
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Run tests
-        run: |
-          npx playwright install --with-deps chromium
-          npm run test:coverage
+        run: npm run test:coverage
 
       - name: Check coverage threshold
         run: |
