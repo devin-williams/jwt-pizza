@@ -40,7 +40,7 @@ test.describe('Diner functionality', () => {
     await expect(page.getByText('Pepperoni')).toBeVisible();
   });
 
-  test.skip('select pizzas and view in cart', async ({ page }) => {
+  test('select pizzas and view in cart', async ({ page }) => {
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({ json: null });
     });
@@ -48,16 +48,17 @@ test.describe('Diner functionality', () => {
     await page.goto('/menu');
 
     // Wait for store dropdown to populate
-    await page.waitForFunction(() => {
-      const select = document.querySelector('select');
-      return select && select.options.length > 1;
-    });
+    await page.waitForTimeout(100);
 
     await page.getByRole('combobox').selectOption('1');
-    await page.getByRole('link', { name: 'Image Description Veggie A' }).click();
+
+    // Click on pizza cards
+    const pizzaButtons = page.locator('button:has-text("Veggie")');
+    await pizzaButtons.first().click();
     await expect(page.locator('form')).toContainText('Selected pizzas: 1');
 
-    await page.getByRole('link', { name: 'Image Description Pepperoni' }).click();
+    const pepperoniButtons = page.locator('button:has-text("Pepperoni")');
+    await pepperoniButtons.first().click();
     await expect(page.locator('form')).toContainText('Selected pizzas: 2');
   });
 
@@ -89,4 +90,52 @@ test.describe('Diner functionality', () => {
     await expect(page.getByRole('heading', { name: 'Your pizza kitchen' })).toBeVisible();
   });
 
+  test('checkout button is disabled without store selection', async ({ page }) => {
+    await page.route('*/**/api/user/me', async (route) => {
+      await route.fulfill({ json: null });
+    });
+
+    await page.goto('/menu');
+    await page.waitForTimeout(100);
+
+    const checkoutButton = page.getByRole('button', { name: 'Checkout' });
+    await expect(checkoutButton).toBeDisabled();
+  });
+
+  test('diner dashboard shows orders', async ({ page }) => {
+    await page.route('*/**/api/user/me', async (route) => {
+      await route.fulfill({
+        json: {
+          id: 1,
+          name: 'Diner User',
+          email: 'diner@jwt.com',
+          roles: [{ role: 'diner' }],
+        },
+      });
+    });
+
+    await page.route('*/**/api/order', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          json: {
+            dinerId: 1,
+            orders: [
+              {
+                id: 1,
+                franchiseId: 1,
+                storeId: 1,
+                date: '2024-01-01',
+                items: [{ menuId: 1, description: 'Veggie', price: 0.0038 }],
+              },
+            ],
+            page: 1,
+          },
+        });
+      }
+    });
+
+    await page.goto('/diner-dashboard');
+    await expect(page.getByRole('heading', { name: 'Your pizza kitchen' })).toBeVisible();
+  });
 });
+

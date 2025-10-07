@@ -34,4 +34,23 @@ test.describe('Franchise management', () => {
     await expect(page.getByRole('heading', { name: /So you want a piece of the pie?/ })).toBeVisible();
   });
 
+  test('franchise dashboard shows why franchise for non-franchisee', async ({ page }) => {
+    await page.route('*/**/api/user/me', async (route) => {
+      await route.fulfill({
+        json: {
+          id: 1,
+          name: 'Regular User',
+          email: 'user@jwt.com',
+          roles: [{ role: 'diner' }],
+        },
+      });
+    });
+
+    await page.route('*/**/api/franchise/1', async (route) => {
+      await route.fulfill({ json: [] });
+    });
+
+    await page.goto('/franchise-dashboard');
+    await expect(page.getByRole('heading', { name: 'So you want a piece of the pie?' })).toBeVisible();
+  });
 });
