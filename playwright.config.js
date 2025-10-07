@@ -6,10 +6,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: process.env.CI ? [['html'], ['json'], ['line']] : 'html',
+  timeout: 30000,
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
+    actionTimeout: 10000,
   },
   projects: [
     {
@@ -18,8 +20,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.env.VITE_COVERAGE === 'true' ? 'VITE_COVERAGE=true npm run dev' : 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
+    timeout: 120000,
   },
 });
