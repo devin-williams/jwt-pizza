@@ -8,7 +8,7 @@ export default defineConfig({
       exclude: ['node_modules', 'tests/'],
       extension: ['.js', '.jsx', '.ts', '.tsx'],
       requireEnv: false,
-      forceBuildInstrument: process.env.VITE_COVERAGE === 'true',
+      forceBuildInstrument: process.env.VITE_COVERAGE === 'true' || process.env.CI === 'true',
     }),
   ],
   server: {
