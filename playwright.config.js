@@ -25,7 +25,8 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     env: {
-      VITE_COVERAGE: process.env.VITE_COVERAGE,
+      VITE_COVERAGE: process.env.VITE_COVERAGE || 'true',
+      CI: process.env.CI,
     },
   },
 });
