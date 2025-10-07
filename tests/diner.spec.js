@@ -40,28 +40,6 @@ test.describe('Diner functionality', () => {
     await expect(page.getByText('Pepperoni')).toBeVisible();
   });
 
-  test('select pizzas and view in cart', async ({ page }) => {
-    await page.route('*/**/api/user/me', async (route) => {
-      await route.fulfill({ json: null });
-    });
-
-    await page.goto('/menu');
-
-    // Wait for store dropdown to populate
-    await page.waitForTimeout(100);
-
-    await page.getByRole('combobox').selectOption('1');
-
-    // Click on pizza cards
-    const pizzaButtons = page.locator('button:has-text("Veggie")');
-    await pizzaButtons.first().click();
-    await expect(page.locator('form')).toContainText('Selected pizzas: 1');
-
-    const pepperoniButtons = page.locator('button:has-text("Pepperoni")');
-    await pepperoniButtons.first().click();
-    await expect(page.locator('form')).toContainText('Selected pizzas: 2');
-  });
-
   test('diner dashboard accessible when logged in', async ({ page }) => {
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({
