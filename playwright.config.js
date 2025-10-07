@@ -20,13 +20,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'VITE_COVERAGE=true npm run dev' : 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
-    env: {
-      VITE_COVERAGE: process.env.VITE_COVERAGE || 'true',
-      CI: process.env.CI,
-    },
   },
 });

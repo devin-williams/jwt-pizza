@@ -1,17 +1,17 @@
 import { defineConfig } from 'vite';
 import istanbul from 'vite-plugin-istanbul';
 
-export default defineConfig({
+export default defineConfig(() => ({
   plugins: [
     istanbul({
       include: 'src/*',
       exclude: ['node_modules', 'tests/'],
       extension: ['.js', '.jsx', '.ts', '.tsx'],
       requireEnv: false,
-      forceBuildInstrument: process.env.VITE_COVERAGE === 'true' || process.env.CI === 'true',
+      forceBuildInstrument: process.env.VITE_COVERAGE === 'true',
     }),
   ],
   server: {
     port: 5173,
   },
-});
+}));
