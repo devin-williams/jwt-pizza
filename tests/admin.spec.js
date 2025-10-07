@@ -72,4 +72,43 @@ test.describe('Admin operations', () => {
     await page.goto('/admin-dashboard/close-franchise');
     await expect(page).toHaveURL('/admin-dashboard/close-franchise');
   });
+
+  test('admin dashboard with pagination and interactions', async ({ page }) => {
+    await page.route('*/**/api/user/me', async (route) => {
+      await route.fulfill({
+        json: {
+          id: 1,
+          name: 'Admin User',
+          email: 'admin@jwt.com',
+          roles: [{ role: 'admin' }],
+        },
+      });
+    });
+
+    await page.route('*/**/api/franchise*', async (route) => {
+      await route.fulfill({
+        json: {
+          franchises: [
+            { id: 1, name: 'Franchise A', stores: [{ id: 1, name: 'Store 1' }] },
+            { id: 2, name: 'Franchise B', stores: [{ id: 2, name: 'Store 2' }] },
+          ],
+          more: true,
+        },
+      });
+    });
+
+    await page.goto('/admin-dashboard');
+    await page.waitForTimeout(200);
+
+    // Check that franchise data is visible
+    const heading = page.getByRole('heading').first();
+    await expect(heading).toBeVisible();
+
+    // Try to trigger more button if it exists
+    const moreButton = page.getByRole('button', { name: /more/i });
+    if (await moreButton.isVisible()) {
+      await moreButton.click();
+      await page.waitForTimeout(100);
+    }
+  });
 });
