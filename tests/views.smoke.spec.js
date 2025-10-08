@@ -36,12 +36,28 @@ test.describe('Smoke tests - basic page loads', () => {
   });
 
   test('smokes /admin-dashboard', async ({ page }) => {
+    await page.route('*/**/api/auth', async (route) => {
+      if (route.request().method() === 'PUT') {
+        await route.fulfill({
+          json: {
+            user: {
+              id: 1,
+              name: 'Admin',
+              email: 'a@jwt.com',
+              roles: [{ role: 'admin' }],
+            },
+            token: 'fake-admin-token',
+          },
+        });
+      }
+    });
+
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({
         json: {
           id: 1,
-          name: 'Admin User',
-          email: 'admin@jwt.com',
+          name: 'Admin',
+          email: 'a@jwt.com',
           roles: [{ role: 'admin' }],
         },
       });
@@ -55,6 +71,14 @@ test.describe('Smoke tests - basic page loads', () => {
         },
       });
     });
+
+    // Login first
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByPlaceholder('Email address').fill('a@jwt.com');
+    await page.getByPlaceholder('Password').fill('admin');
+    await page.getByRole('button', { name: 'Login' }).click();
+    await page.waitForTimeout(100);
 
     await page.goto('/admin-dashboard');
     await page.waitForTimeout(200);
@@ -92,12 +116,28 @@ test.describe('Smoke tests - basic page loads', () => {
   });
 
   test('smokes /close-store', async ({ page }) => {
+    await page.route('*/**/api/auth', async (route) => {
+      if (route.request().method() === 'PUT') {
+        await route.fulfill({
+          json: {
+            user: {
+              id: 1,
+              name: 'Admin',
+              email: 'a@jwt.com',
+              roles: [{ role: 'admin' }],
+            },
+            token: 'fake-admin-token',
+          },
+        });
+      }
+    });
+
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({
         json: {
           id: 1,
-          name: 'Admin User',
-          email: 'admin@jwt.com',
+          name: 'Admin',
+          email: 'a@jwt.com',
           roles: [{ role: 'admin' }],
         },
       });
@@ -109,6 +149,14 @@ test.describe('Smoke tests - basic page loads', () => {
       }
     });
 
+    // Login first
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByPlaceholder('Email address').fill('a@jwt.com');
+    await page.getByPlaceholder('Password').fill('admin');
+    await page.getByRole('button', { name: 'Login' }).click();
+    await page.waitForTimeout(100);
+
     await page.goto('/close-store/1/1');
     await page.waitForTimeout(100);
     const heading = page.getByRole('heading').first();
@@ -116,12 +164,28 @@ test.describe('Smoke tests - basic page loads', () => {
   });
 
   test('smokes /create-store', async ({ page }) => {
+    await page.route('*/**/api/auth', async (route) => {
+      if (route.request().method() === 'PUT') {
+        await route.fulfill({
+          json: {
+            user: {
+              id: 1,
+              name: 'Admin',
+              email: 'a@jwt.com',
+              roles: [{ role: 'admin' }],
+            },
+            token: 'fake-admin-token',
+          },
+        });
+      }
+    });
+
     await page.route('*/**/api/user/me', async (route) => {
       await route.fulfill({
         json: {
           id: 1,
-          name: 'Admin User',
-          email: 'admin@jwt.com',
+          name: 'Admin',
+          email: 'a@jwt.com',
           roles: [{ role: 'admin' }],
         },
       });
@@ -132,6 +196,14 @@ test.describe('Smoke tests - basic page loads', () => {
         await route.fulfill({ json: { id: 1, name: 'New Store' } });
       }
     });
+
+    // Login first
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Login' }).click();
+    await page.getByPlaceholder('Email address').fill('a@jwt.com');
+    await page.getByPlaceholder('Password').fill('admin');
+    await page.getByRole('button', { name: 'Login' }).click();
+    await page.waitForTimeout(100);
 
     await page.goto('/create-store/1');
     await page.waitForTimeout(100);
