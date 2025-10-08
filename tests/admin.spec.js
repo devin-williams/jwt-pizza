@@ -1,4 +1,5 @@
 import { test, expect } from "playwright-test-coverage";
+import { openWithState } from "./helpers/openWithState.js";
 
 test.describe("Admin operations", () => {
   test.beforeEach(async ({ page }) => {
@@ -170,18 +171,24 @@ test.describe("Admin operations", () => {
     await page.waitForTimeout(100);
 
     // Set state and navigate in one step using addInitScript
-    await page.addInitScript((state) => {
-      window.__ROUTER_STATE__ = state;
-    }, { franchise: { id: 1, name: "Test Franchise" } });
+    await page.addInitScript(
+      (state) => {
+        window.__ROUTER_STATE__ = state;
+      },
+      { franchise: { id: 1, name: "Test Franchise" } }
+    );
 
     // Inject the state into React Router before navigation
     await page.goto("/create-store/1", { waitUntil: "domcontentloaded" });
 
-    await page.evaluate((state) => {
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState(state, "", window.location.pathname);
-      }
-    }, { franchise: { id: 1, name: "Test Franchise" } });
+    await page.evaluate(
+      (state) => {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(state, "", window.location.pathname);
+        }
+      },
+      { franchise: { id: 1, name: "Test Franchise" } }
+    );
 
     await page.waitForTimeout(200);
 
@@ -237,14 +244,17 @@ test.describe("Admin operations", () => {
     // Navigate and inject state
     await page.goto("/close-store/1/1", { waitUntil: "domcontentloaded" });
 
-    await page.evaluate((state) => {
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState(state, "", window.location.pathname);
+    await page.evaluate(
+      (state) => {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(state, "", window.location.pathname);
+        }
+      },
+      {
+        franchise: { id: 1, name: "Test Franchise" },
+        store: { id: 1, name: "Downtown Store" },
       }
-    }, {
-      franchise: { id: 1, name: "Test Franchise" },
-      store: { id: 1, name: "Downtown Store" },
-    });
+    );
 
     await page.waitForTimeout(200);
 
@@ -322,5 +332,73 @@ test.describe("Admin operations", () => {
       await moreButton.click();
       await page.waitForTimeout(100);
     }
+  });
+
+  test.describe("Create/Close Store pages render with state", () => {
+    test.beforeEach(async ({ page }) => {
+      // Make the auth & user calls succeed as admin
+      await page.route("**/api/auth", (route) => {
+        if (route.request().method() === "PUT") {
+          return route.fulfill({
+            json: {
+              user: {
+                id: 1,
+                name: "Admin",
+                email: "a@jwt.com",
+                roles: [{ role: "admin" }],
+              },
+              token: "fake-admin-token",
+            },
+          });
+        }
+        return route.continue();
+      });
+
+      await page.route("**/api/user/me", (route) =>
+        route.fulfill({
+          json: {
+            id: 1,
+            name: "Admin",
+            email: "a@jwt.com",
+            roles: [{ role: "admin" }],
+          },
+        })
+      );
+
+      // Stub store endpoints used by these pages
+      await page.route("**/api/franchise/1/store", (route) => {
+        if (route.request().method() === "POST") {
+          return route.fulfill({
+            json: { id: 1, name: "New Store", totalRevenue: 0 },
+          });
+        }
+        return route.continue();
+      });
+
+      await page.route("**/api/franchise/1/store/1", (route) => {
+        if (route.request().method() === "DELETE") {
+          return route.fulfill({ json: { message: "store deleted" } });
+        }
+        return route.continue();
+      });
+    });
+
+    test("CreateStore renders and submits", async ({ page }) => {
+      // If your router path is '/admin-dashboard/create-store', use that string instead of '/create-store'
+      await openWithState(page, "/create-store", {
+        franchise: { id: 1, name: "Test Franchise" },
+      });
+
+      await expect(
+        page.getByRole("heading", { name: /create store/i })
+      ).toBeVisible();
+
+      // Fill and submit (uses placeholder "store name" in your component)
+      await page.getByPlaceholder(/store name/i).fill("Downtown");
+      await page.getByRole("button", { name: /^create$/i }).click();
+
+      // Wait for API call to complete
+      await page.waitForTimeout(100);
+    });
   });
 });
