@@ -2,6 +2,7 @@ import { test, expect } from "playwright-test-coverage";
 
 test("updateUser", async ({ page }) => {
   const email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
+
   await page.goto("/");
   await page.getByRole("link", { name: "Register" }).click();
   await page.getByRole("textbox", { name: "Full name" }).fill("pizza diner");
