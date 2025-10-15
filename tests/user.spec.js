@@ -138,8 +138,8 @@ test("updateUserEmail", async ({ page }) => {
 
 test("updateUserMultipleFields", async ({ page }) => {
   const email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
-  const originalName = "original user";
-  const updatedName = "updated user";
+  const originalName = "multi field";
+  const updatedName = "updated field";
   const password = "testpass";
 
   // Register a new user
@@ -150,9 +150,8 @@ test("updateUserMultipleFields", async ({ page }) => {
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: "Register" }).click();
 
-  // Wait for registration to complete and navigate to user dashboard
-  await page.waitForURL(/\//);
-  await page.getByRole("link", { name: "ou" }).click();
+  // Navigate to user dashboard
+  await page.getByRole("link", { name: "mf" }).click();
 
   // Verify original name is displayed
   await expect(page.getByRole("main")).toContainText(originalName);
