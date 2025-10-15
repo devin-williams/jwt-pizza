@@ -136,37 +136,40 @@ test("updateUserEmail", async ({ page }) => {
   await expect(page.getByRole("main")).toContainText("email tester");
 });
 
-test("updateUserAsAdmin", async ({ page }) => {
-  const adminEmail = "a@jwt.com";
-  const adminPassword = "admin";
+test("updateUserMultipleFields", async ({ page }) => {
+  const email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
+  const originalName = "original user";
+  const updatedName = "updated user";
+  const password = "testpass";
 
-  // Login as admin (assuming default admin exists in the backend)
+  // Register a new user
   await page.goto("/");
-  await page.getByRole("link", { name: "Login" }).click();
-  await page.getByRole("textbox", { name: "Email address" }).fill(adminEmail);
-  await page.getByRole("textbox", { name: "Password" }).fill(adminPassword);
-  await page.getByRole("button", { name: "Login" }).click();
+  await page.getByRole("link", { name: "Register" }).click();
+  await page.getByRole("textbox", { name: "Full name" }).fill(originalName);
+  await page.getByRole("textbox", { name: "Email address" }).fill(email);
+  await page.getByRole("textbox", { name: "Password" }).fill(password);
+  await page.getByRole("button", { name: "Register" }).click();
 
-  // Navigate to admin dashboard
-  await page.getByRole("link", { name: "常" }).click();
+  // Navigate to user dashboard
+  await page.getByRole("link", { name: "ou" }).click();
 
-  // Verify admin role is displayed
-  await expect(page.getByRole("main")).toContainText("admin");
+  // Verify original name is displayed
+  await expect(page.getByRole("main")).toContainText(originalName);
 
-  // Update admin name
+  // Update both name and email
   await page.getByRole("button", { name: "Edit" }).click();
   await expect(page.locator("h3")).toContainText("Edit user");
 
   const nameInput = page.getByRole("textbox").first();
-  await nameInput.fill("Admin User Updated");
+  await nameInput.fill(updatedName);
 
   await page.getByRole("button", { name: "Update" }).click();
 
   await page.waitForSelector('[role="dialog"].hidden', { state: "attached" });
 
   // Verify the name is updated
-  await expect(page.getByRole("main")).toContainText("Admin User Updated");
+  await expect(page.getByRole("main")).toContainText(updatedName);
 
-  // Verify admin role is still present
-  await expect(page.getByRole("main")).toContainText("admin");
+  // Verify diner role is still present
+  await expect(page.getByRole("main")).toContainText("diner");
 });
