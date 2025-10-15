@@ -334,6 +334,206 @@ test.describe("Admin operations", () => {
     }
   });
 
+  test("admin dashboard displays users list with pagination", async ({ page }) => {
+    await page.route("*/**/api/auth", async (route) => {
+      if (route.request().method() === "PUT") {
+        await route.fulfill({
+          json: {
+            user: {
+              id: 1,
+              name: "Admin",
+              email: "a@jwt.com",
+              roles: [{ role: "admin" }],
+            },
+            token: "fake-admin-token",
+          },
+        });
+      }
+    });
+
+    await page.route("*/**/api/user/me", async (route) => {
+      await route.fulfill({
+        json: {
+          id: 1,
+          name: "Admin",
+          email: "a@jwt.com",
+          roles: [{ role: "admin" }],
+        },
+      });
+    });
+
+    await page.route("*/**/api/franchise*", async (route) => {
+      await route.fulfill({
+        json: {
+          franchises: [],
+          more: false,
+        },
+      });
+    });
+
+    await page.route("*/**/api/user*", async (route) => {
+      const url = new URL(route.request().url());
+      const pageNum = parseInt(url.searchParams.get("page") || "0");
+      const name = url.searchParams.get("name");
+
+      // Simulate different pages of users
+      let users = [];
+      if (name) {
+        // Return filtered users
+        users = [
+          { id: 2, name: "Alice Smith", email: "alice@test.com", roles: [{ role: "diner" }] },
+        ];
+      } else if (pageNum === 0) {
+        users = [
+          { id: 2, name: "Alice Smith", email: "alice@test.com", roles: [{ role: "diner" }] },
+          { id: 3, name: "Bob Jones", email: "bob@test.com", roles: [{ role: "diner" }] },
+          { id: 4, name: "Charlie Brown", email: "charlie@test.com", roles: [{ role: "franchisee" }] },
+        ];
+      } else if (pageNum === 1) {
+        users = [
+          { id: 5, name: "Diana Prince", email: "diana@test.com", roles: [{ role: "diner" }] },
+          { id: 6, name: "Eve Adams", email: "eve@test.com", roles: [{ role: "diner" }] },
+        ];
+      }
+
+      await route.fulfill({
+        json: {
+          users: users,
+          more: pageNum === 0 && !name,
+        },
+      });
+    });
+
+    // Login first
+    await page.goto("/");
+    await page.getByRole("link", { name: "Login" }).click();
+    await page.getByPlaceholder("Email address").fill("a@jwt.com");
+    await page.getByPlaceholder("Password").fill("admin");
+    await page.getByRole("button", { name: "Login" }).click();
+    await page.waitForTimeout(100);
+
+    await page.goto("/admin-dashboard");
+    await page.waitForTimeout(200);
+
+    // Check that users section heading is visible
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+
+    // Check that initial users are displayed
+    await expect(page.getByText("Alice Smith")).toBeVisible();
+    await expect(page.getByText("Bob Jones")).toBeVisible();
+    await expect(page.getByText("Charlie Brown")).toBeVisible();
+
+    // Test pagination - click next page
+    const nextButton = page.getByRole("button", { name: "»" }).last();
+    await nextButton.click();
+    await page.waitForTimeout(200);
+
+    // Check that page 2 users are displayed
+    await expect(page.getByText("Diana Prince")).toBeVisible();
+    await expect(page.getByText("Eve Adams")).toBeVisible();
+
+    // Test pagination - click previous page
+    const prevButton = page.getByRole("button", { name: "«" }).last();
+    await prevButton.click();
+    await page.waitForTimeout(200);
+
+    // Should be back to page 1 users
+    await expect(page.getByText("Alice Smith")).toBeVisible();
+    await expect(page.getByText("Bob Jones")).toBeVisible();
+  });
+
+  test("admin dashboard filters users by name", async ({ page }) => {
+    await page.route("*/**/api/auth", async (route) => {
+      if (route.request().method() === "PUT") {
+        await route.fulfill({
+          json: {
+            user: {
+              id: 1,
+              name: "Admin",
+              email: "a@jwt.com",
+              roles: [{ role: "admin" }],
+            },
+            token: "fake-admin-token",
+          },
+        });
+      }
+    });
+
+    await page.route("*/**/api/user/me", async (route) => {
+      await route.fulfill({
+        json: {
+          id: 1,
+          name: "Admin",
+          email: "a@jwt.com",
+          roles: [{ role: "admin" }],
+        },
+      });
+    });
+
+    await page.route("*/**/api/franchise*", async (route) => {
+      await route.fulfill({
+        json: {
+          franchises: [],
+          more: false,
+        },
+      });
+    });
+
+    await page.route("*/**/api/user*", async (route) => {
+      const url = new URL(route.request().url());
+      const name = url.searchParams.get("name");
+
+      let users = [];
+      if (name && name.includes("Alice")) {
+        users = [
+          { id: 2, name: "Alice Smith", email: "alice@test.com", roles: [{ role: "diner" }] },
+        ];
+      } else {
+        users = [
+          { id: 2, name: "Alice Smith", email: "alice@test.com", roles: [{ role: "diner" }] },
+          { id: 3, name: "Bob Jones", email: "bob@test.com", roles: [{ role: "diner" }] },
+          { id: 4, name: "Charlie Brown", email: "charlie@test.com", roles: [{ role: "franchisee" }] },
+        ];
+      }
+
+      await route.fulfill({
+        json: {
+          users: users,
+          more: false,
+        },
+      });
+    });
+
+    // Login first
+    await page.goto("/");
+    await page.getByRole("link", { name: "Login" }).click();
+    await page.getByPlaceholder("Email address").fill("a@jwt.com");
+    await page.getByPlaceholder("Password").fill("admin");
+    await page.getByRole("button", { name: "Login" }).click();
+    await page.waitForTimeout(100);
+
+    await page.goto("/admin-dashboard");
+    await page.waitForTimeout(200);
+
+    // Check that all users are displayed initially
+    await expect(page.getByText("Alice Smith")).toBeVisible();
+    await expect(page.getByText("Bob Jones")).toBeVisible();
+    await expect(page.getByText("Charlie Brown")).toBeVisible();
+
+    // Filter users by name
+    const filterInput = page.getByPlaceholder("Filter users").last();
+    await filterInput.fill("Alice");
+    const submitButton = page.getByRole("button", { name: "Submit" }).last();
+    await submitButton.click();
+    await page.waitForTimeout(200);
+
+    // Should only show Alice
+    await expect(page.getByText("Alice Smith")).toBeVisible();
+    // Bob and Charlie should not be visible
+    await expect(page.getByText("Bob Jones")).not.toBeVisible();
+    await expect(page.getByText("Charlie Brown")).not.toBeVisible();
+  });
+
   test.describe("Create/Close Store pages render with state", () => {
     test.beforeEach(async ({ page }) => {
       // Make the auth & user calls succeed as admin
