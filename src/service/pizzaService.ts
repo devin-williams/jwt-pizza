@@ -129,6 +129,7 @@ interface PizzaService {
     limit: number,
     nameFilter: string
   ): Promise<UserList>;
+  deleteUser(userId: string): Promise<void>;
 }
 
 export {

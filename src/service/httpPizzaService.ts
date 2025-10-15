@@ -130,6 +130,10 @@ class HttpPizzaService implements PizzaService {
     }
     return this.callEndpoint(query);
   }
+
+  async deleteUser(userId: string): Promise<void> {
+    return this.callEndpoint(`/api/user/${userId}`, 'DELETE');
+  }
 }
 
 const httpPizzaService = new HttpPizzaService();

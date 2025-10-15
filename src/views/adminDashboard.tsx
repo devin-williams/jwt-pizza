@@ -47,6 +47,17 @@ export default function AdminDashboard(props: Props) {
     setUserList(await pizzaService.getUsers(userPage, 10, filterUserRef.current?.value || ''));
   }
 
+  async function deleteUser(userId: string) {
+    try {
+      await pizzaService.deleteUser(userId);
+      // Refresh the user list after deletion
+      const updatedList = await pizzaService.getUsers(userPage, 3, '');
+      setUserList(updatedList);
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+    }
+  }
+
   let response = <NotFound />;
   if (Role.isRole(props.user, Role.Admin)) {
     response = (
@@ -139,7 +150,7 @@ export default function AdminDashboard(props: Props) {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
                         <tr>
-                          {['Name', 'Email', 'Roles'].map((header) => (
+                          {['Name', 'Email', 'Roles', 'Action'].map((header) => (
                             <th key={header} scope="col" className="px-6 py-3 text-center text-xs font-medium">
                               {header}
                             </th>
@@ -158,12 +169,18 @@ export default function AdminDashboard(props: Props) {
                             <td className="text-start px-6 py-4 whitespace-nowrap text-sm text-gray-800">
                               {user.roles?.map((r) => r.role).join(', ')}
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-end text-sm font-medium">
+                              <button type="button" className="px-2 py-1 inline-flex items-center gap-x-2 text-sm font-semibold rounded-lg border border-1 border-orange-400 text-orange-400 hover:border-orange-800 hover:text-orange-800" onClick={() => deleteUser(user.id!)}>
+                                <TrashIcon />
+                                Delete
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr>
-                          <td className="px-1 py-1">
+                          <td className="px-1 py-1" colSpan={2}>
                             <input type="text" ref={filterUserRef} name="filterUser" placeholder="Filter users" className="px-2 py-1 text-sm border border-gray-300 rounded-lg" />
                             <button type="submit" className="ml-2 px-2 py-1 text-sm font-semibold rounded-lg border border-orange-400 text-orange-400 hover:border-orange-800 hover:text-orange-800" onClick={filterUsers}>
                               Submit

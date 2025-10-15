@@ -442,6 +442,112 @@ test.describe("Admin operations", () => {
     await expect(page.getByText("Bob Jones")).toBeVisible();
   });
 
+  test("admin dashboard deletes user", async ({ page }) => {
+    const deletedUserIds = new Set();
+
+    await page.route("*/**/api/auth", async (route) => {
+      if (route.request().method() === "PUT") {
+        await route.fulfill({
+          json: {
+            user: {
+              id: 1,
+              name: "Admin",
+              email: "a@jwt.com",
+              roles: [{ role: "admin" }],
+            },
+            token: "fake-admin-token",
+          },
+        });
+      }
+    });
+
+    await page.route("*/**/api/franchise*", async (route) => {
+      await route.fulfill({
+        json: {
+          franchises: [],
+          more: false,
+        },
+      });
+    });
+
+    await page.route("**/api/user**", async (route) => {
+      const url = new URL(route.request().url());
+      const method = route.request().method();
+
+      // Handle /api/user/me specifically
+      if (url.pathname.includes('/me')) {
+        await route.fulfill({
+          json: {
+            id: 1,
+            name: "Admin",
+            email: "a@jwt.com",
+            roles: [{ role: "admin" }],
+          },
+        });
+        return;
+      }
+
+      // Handle DELETE request for specific user
+      if (method === "DELETE") {
+        const pathParts = url.pathname.split("/");
+        const userId = pathParts[pathParts.length - 1];
+        deletedUserIds.add(parseInt(userId));
+        await route.fulfill({
+          json: {
+            message: "user deleted",
+          },
+        });
+        return;
+      }
+
+      // Handle GET request for user list
+      let users = [
+        { id: 2, name: "Alice Smith", email: "alice@test.com", roles: [{ role: "diner" }] },
+        { id: 3, name: "Bob Jones", email: "bob@test.com", roles: [{ role: "diner" }] },
+        { id: 4, name: "Charlie Brown", email: "charlie@test.com", roles: [{ role: "franchisee" }] },
+      ];
+
+      // Filter out deleted users
+      users = users.filter((u) => !deletedUserIds.has(u.id));
+
+      await route.fulfill({
+        json: {
+          users: users,
+          more: false,
+        },
+      });
+    });
+
+    // Login first
+    await page.goto("/");
+    await page.getByRole("link", { name: "Login" }).click();
+    await page.getByPlaceholder("Email address").fill("a@jwt.com");
+    await page.getByPlaceholder("Password").fill("admin");
+    await page.getByRole("button", { name: "Login" }).click();
+    await page.waitForTimeout(100);
+
+    await page.goto("/admin-dashboard");
+    await page.waitForTimeout(200);
+
+    // Check that all users are displayed initially
+    await expect(page.getByText("Alice Smith")).toBeVisible();
+    await expect(page.getByText("Bob Jones")).toBeVisible();
+    await expect(page.getByText("Charlie Brown")).toBeVisible();
+
+    // Find and click the delete button for Bob Jones (user id 3)
+    const bobRow = page.locator("tr", { hasText: "Bob Jones" });
+    const deleteButton = bobRow.getByRole("button", { name: /delete/i });
+
+    await deleteButton.click();
+
+    // Wait for Bob to be removed from the list
+    await page.waitForSelector('td:has-text("Bob Jones")', { state: 'detached', timeout: 5000 });
+
+    // Alice and Charlie should still be visible
+    await expect(page.getByText("Alice Smith")).toBeVisible();
+    await expect(page.getByText("Charlie Brown")).toBeVisible();
+  });
+
   test("admin dashboard filters users by name", async ({ page }) => {
     await page.route("*/**/api/auth", async (route) => {
       if (route.request().method() === "PUT") {
