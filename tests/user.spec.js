@@ -150,7 +150,8 @@ test("updateUserMultipleFields", async ({ page }) => {
   await page.getByRole("textbox", { name: "Password" }).fill(password);
   await page.getByRole("button", { name: "Register" }).click();
 
-  // Navigate to user dashboard
+  // Wait for registration to complete and navigate to user dashboard
+  await page.waitForURL(/\//);
   await page.getByRole("link", { name: "ou" }).click();
 
   // Verify original name is displayed
